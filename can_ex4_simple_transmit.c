@@ -25,8 +25,8 @@ char debugBuf[64];
 //-----------------------------------------------
 // ===== Sum-of-Sines (Motor1 için KONUM profili) =====
 // Frekans ve faz dizileri
-static const double freqs[13] = {0.10,0.15,0.25,0.35,0.55,0.65,0.85,0.95,1.15,1.45,1.55,1.85,2.05};
-static const double posPH[13] = {1.7413,0.9611,2.2505,0.8712,0.9909,0.2849,1.7916,0.5468,0.9560,1.1420,0.4083,0.9600,2.0160};
+static const double freqs[13] = {0.10,0.15,0.55,0.95,1.15,1.55};
+static const double posPH[13] = {1.7413,0.9611,0.9909,0.5468,0.9560,0.4083};
 
 // Toplam konum tepe genliği (|p_des| ≤ P_AMP olacak şekilde ölçekleriz)
 static const float P_AMP = 3.0f;   // rad cinsinden hedef tepe. P_MAX=±12.5, bu çok güvenli.
@@ -258,24 +258,21 @@ __interrupt void cpuTimer0ISR(void)
     //sum of sines
     time_ms += 2;
     float t = (float)time_ms * 1e-3f;
-    float p_sum = 0.0f;
-    float v_sum = 0.0f;
+    float t_sum = 0.0f;
+
     int i;
     for ( i = 0; i < 13; i++)
     {
         float omega = 2.0f * PI * (float)freqs[i];
         float ang   = omega * t + (float)posPH[i];
-
         float s = sinf(ang);
-        float c = cosf(ang);
 
-        p_sum += s;
-        v_sum += omega * c;
+        t_sum += s/omega;
+
     }
     float scale = P_AMP / 13.0f;
-    motor1.p_des = scale * p_sum;   // hedef konum (rad)
-    motor1.v_des = scale * v_sum;   // hedef hız (rad/s)
-    motor1.t_ff  = 0.0f;
+
+    motor1.t_ff  =  2*t_sum;
 //    //motor1 sin vermek icin phase accumulator
 //    time_ms += 2;
 //    theta += 2.0f * PI * (target_freq / sample_freq);
